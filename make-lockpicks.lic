@@ -1,0 +1,125 @@
+=begin
+make-lockpicks.lic
+Refills worn lockpick ring
+=end
+
+custom_require.call(%w[common common-crafting common-items])
+
+class MakeLockpicks
+  include DRC
+  include DRCC
+  include DRCI
+
+  def initialize
+    @settings = get_settings
+    @picks_to_keep = [ 'grandmaster\'s', 'master\'s' ]
+
+    stow_hands
+    @keyblanks_on_hand = count_keyblanks
+    @lockpicks_needed = count_lockpicks
+    if @lockpicks_needed == 0
+      echo "*** Your lockpick ring is already full ***"
+      exit
+    elsif @keyblanks_on_hand == 0
+      echo "*** You do not have any keyblanks ***"
+      exit
+    elsif @keyblanks_on_hand < @lockpicks_needed
+      echo "*** You do not have enough keyblanks to make #{@lockpicks_needed} lockpicks. Reducing to #{@keyblanks_on_hand}."
+      @lockpicks_needed = @keyblanks_on_hand
+    end
+    
+    wait_for_script_to_complete('buff', ['make-lockpicks'])
+
+    make_lockpicks
+  end
+
+  def make_lockpicks
+    get_crafting_item('carving knife', @settings.crafting_container, @settings.crafting_items_in_container, @settings.engineering_belt)
+
+    @lockpicks_needed.times do
+      carve_keyblank
+      case bput('put my lockpick on my lockpick ring', 'You put', 'The lockpick ring already has', 'You don\'t think you should put different kinds of lockpicks')
+      when 'The lockpick ring already has'
+        break
+      when 'You don\'t think you should put different kinds of lockpicks'
+        echo "*** #{left_hand} is of a different quality than your lockpick ring, stowing it"
+        stow_hand('left')
+        redo
+      end
+    end
+
+    stow_crafting_item('carving knife', @settings.crafting_container, @settings.engineering_belt)
+  end
+
+  def carve_keyblank
+    case bput('get keyblank from my keyblank pocket', 'You get', 'What were you referring')
+    when 'What were you referring'
+      unless count_keyblanks > 0
+        echo '*** You\'ve run out of key blanks ***'
+        stow_crafting_item('carving knife', @settings.crafting_container, @settings.engineering_belt)
+        exit
+      end
+      carve_keyblank
+    end
+
+    case bput('carve my keyblank with my carving knife', 'Starting with a simple slab of material', 'keyblank snaps like a twig', 'You are too injured to do any')
+    when 'keyblank snaps like a twig'
+      carve_keyblank
+    when 'You are too injured to do any'
+      stow_crafting_item('carving knife', @settings.crafting_container, @settings.engineering_belt)
+      bput('put my keyblank in my keyblank pocket', 'You put')
+      echo '*** Go get healed ***'
+      exit
+    end
+
+    loop do
+      case bput('carve my lockpick with my carving knife', 'Working with extreme caution', 'proudly glance down at a', 'lockpick snaps like a twig', 'It would be better to find')
+      when 'lockpick snaps like a twig'
+        carve_keyblank
+      when 'It would be better to find', 'proudly glance down at a'
+        case bput('glance', 'You glance down to see .*')
+        when /and a ([a-z\']+) \w+ lockpick in your left hand/
+          if $LAST_MATCH_INFO[1] == 'grandmaster\'s'
+            bput('carve my lockpick with my carving knife', 'With the precision and skill shown only by true masters')
+          end
+          return if @picks_to_keep.include? $LAST_MATCH_INFO[1]
+          dispose_trash('lockpick')
+          carve_keyblank
+        end
+      end
+    end
+
+  end
+
+  def count_keyblanks
+    keyblanks = 0
+    $ORDINALS.each do |ordinal|
+      bput("open my #{ordinal} keyblank pocket", 'You open', 'That is already', 'What were you')
+      case bput("count my #{ordinal} keyblank pocket", /It looks like there are .* keyblanks/, 'I could not find', 'There\'s nothing inside')
+      when /It looks like there are (\d+) \w+ keyblanks/
+        keyblanks += $LAST_MATCH_INFO[1].to_i
+      when 'There\'s nothing inside'
+        dispose("#{ordinal} keyblank pocket")
+        redo
+      when 'I could not find'
+        break
+      end
+    end
+    return keyblanks
+  end
+
+  def count_lockpicks
+    case bput('glance my lockpick ring', /and it might hold an additional (\d+)/, 'and it appears to be full', 'I could not find what you', /but you think (\d+) lockpicks would probably fit/)
+    when /and it might hold an additional (\d+)/, /but you think (\d+) lockpicks would probably fit/
+      return $LAST_MATCH_INFO[1].to_i
+    when 'and it appears to be full'
+      return 0
+    when 'I could not find what you'
+      echo '*** Unable to find your lockpick ring ***'
+      exit
+    end
+  end
+
+end
+
+MakeLockpicks.new
