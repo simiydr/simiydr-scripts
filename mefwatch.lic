@@ -1,0 +1,133 @@
+=begin
+Alternates between mental focus wands to keep MEF up at all times
+Requires two of the same wand
+=end
+custom_require.call(%w[common drinfomon equipmanager])
+
+class MEFWatch
+  include DRC
+
+  def initialize
+    @settings = get_settings
+    @wand = @settings['mefwatch']['wand'].nil? ? 'bloodwood branch' : @settings['mefwatch']['wand']
+    @no_use_scripts = get_settings['mefwatch']['no_use_scripts']
+    @mef_duration = 34 * 60  #minutes * seconds
+    @cooldown_pad = 2 * 60 #minutes * seconds
+    @equipmanager = EquipmentManager.new
+    @debug = UserVars.mefwatch_debug
+    UserVars.mefwatch_last_use ||= Time.now - @mef_duration
+    
+    unless can_find_wands?
+      echo "*** Unable to find two wands named #{@wand} ***"
+      exit
+    end
+
+    watch
+  end
+
+  def can_find_wands?
+    case fput("push #{@wand}", 'I don\'t think pushing that would', 'Push what')
+    when 'Push what'
+      return false
+    end
+    case fput("push second #{@wand}", 'I don\'t think pushing that would', 'Push what')
+    when 'I don\'t think pushing that would'
+      return true
+    when 'Push what'
+      return false
+    end
+  end
+
+  def watch
+    loop do
+      check_mef
+      pause 20
+    end
+  end
+
+  def check_mef
+    echo "*** Checking MEF. It expires in: #{((UserVars.mefwatch_last_use + @mef_duration) - Time.now).round} seconds ***" if @debug
+    return if Time.now - (@mef_duration - @cooldown_pad) < UserVars.mefwatch_last_use
+    return if @no_use_scripts.any? { |name| Script.running?(name) }
+    return if hidden?
+    refresh_mef
+  end
+
+  def refresh_mef
+    echo "*** MEF is not up or will expire soon, attempting to use a wand ***" if @debug 
+    # pause other scripts
+    Script.running.find_all { |s| !s.paused? && !s.no_pause_all && s.name != 'mefwatch' }.each(&:pause)
+    pause     # pause required to allow the final actions of paused scripts to complete
+    waitrt?
+
+    empty_left_hand if right_hand && left_hand
+
+    use_wand
+    bput("stow my #{@wand}", "You put", 'You should stop practicing')
+
+    if @left_hand_contents
+      if @equipmanager.item_by_desc(@left_hand_contents)
+        echo "*** Wielding weapon #{@left_hand_contents} ***" if @debug
+        @equipmanager.wield_weapon_offhand(@left_hand_contents)
+      else
+        echo "*** Getting #{@left_hand_contents} from #{@left_hand_container} ***" if @debug
+        bput("get my #{@left_hand_contents} from my #{@left_hand_container}", 'You get')
+      end
+
+      @left_hand_contents = nil
+      @left_hand_container = nil
+    end
+
+    Script.running.find_all { |s| s.paused? && !s.no_pause_all && s.name != 'mefwatch' }.each(&:unpause)
+
+  end
+
+  def empty_left_hand
+    @left_hand_contents = left_hand
+    echo "*** Stowing #{@left_hand_contents} ***" if @debug
+    if @equipmanager.item_by_desc(@left_hand_contents)
+      @equipmanager.stow_weapon(@left_hand_contents)
+    else
+      case bput('stow left', 'What were you', /You put your .*\./)
+      when /You put your .* in your (?<container>.*)\./
+        @left_hand_container = $LAST_MATCH_INFO['container']
+      end
+    end
+  end
+
+  def use_wand(last_attempt = false)
+
+    case bput("get my second #{@wand}", 'You get', 'I could not', 'You need a free hand', 'You should stop practicing')
+    when 'I could not', 'You should stop practicing'
+      return false
+    when 'You need a free hand'
+      empty_left_hand
+      use_wand
+    end
+
+    case bput("tap my #{@wand}", 'The world around you seems', 'remains inert', 'You shouldn\'t disrupt the area', 'Something in the area is interfering', 'You\'ll have to hold it', 'You cannot use the branch while maintaining the effort')
+    when 'remains inert'
+      echo "*** Wand is still in cooldown ***" if @debug
+      return false if last_attempt == true
+      bput("stow my #{@wand}", "You put")
+      use_wand true
+    when 'You shouldn\'t disrupt the area', 'Something in the area is interfering', 'You cannot use the branch while maintaining the effort'
+      echo "*** Cannot use wands in this room or inviso ***" if @debug
+      return false
+    when 'You\'ll have to hold it'
+      echo "Something got placed in your left hand" if @debug
+      return false
+    when 'The world around you seems'
+      UserVars.mefwatch_last_use = Time.now
+      echo "*** MEF Refreshed ***" if @debug
+      return true
+    end
+  end
+
+  def pause_all(force = false)
+
+  end
+
+end
+
+MEFWatch.new
