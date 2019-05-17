@@ -1,0 +1,402 @@
+custom_require.call(%w[common common-travel drinfomon events equipmanager])
+
+Flags.add('has-key', /A booming voice echoes through the maze, "(\w+) just found a golden key!"/)
+Flags.add('reset-npcs', 'begins to move around again')
+Flags.add('darkmaze', 'The soft blue light slowly fades away from you.')
+Flags.add('wanddrop', 'Your blue wand falls to the ground')
+Flags.add('whoosh', 'A roaring WHOOSH fills your ears')
+
+
+class MazeRoom
+  attr_accessor :id, :exits, :xpos, :ypos
+  
+  def initialize(id=0)
+    @id = id
+    @exits = {}
+    @has_white_door = false
+    @xpos=0
+    @ypos=0
+    
+    updateExits
+  end
+  
+  def to_s
+    return "ID: #{@id} | Exits: #{@exits} | X: #{@xpos} | Y: #{@ypos}"
+  end
+  
+  def has_unvisited_exit?
+    @exits.each do | path, visited|
+      if(visited==nil)
+        return true
+      end
+    end
+    return false
+  end
+  
+  def removeExit(exit)
+    @exits.delete(exit)
+  end
+  
+  def updateExits
+    # Add all the exits from DRRoom
+    DRRoom.exits.each do | exit |
+      @exits[exit] = nil if @exits[exit].nil?
+    end
+
+    # Remove any exits which no longer exits
+    @exits.each do | path, target |
+      match = false
+      DRRoom.exits.each do | exit |
+        match = true if exit==path
+      end
+      @exits.delete(path) if match==false
+    end
+    
+    # Add any doors
+    DRRoom.room_objs.each do | obj |
+      if(obj.include?('door'))
+        @exits[obj] = nil if @exits[obj] == nil
+        if(obj.include?("white"))
+          @has_white_door=true
+        end
+      end
+    end
+  end
+  
+  def get_unvisited_exits
+    unvisited = Array.new
+    @exits.each do | path, visited|
+      if(visited==nil)
+        unvisited << path
+      end
+    end
+    return unvisited
+  end
+end
+
+class Wander
+  include DRC
+  
+  def initialize
+    @visitedRooms = {}
+    @currentRoom = getNextRoomId
+    @currentX = 0
+    @currentY = 0
+    @lastRoom = 0
+    @whitedoor_found = false
+    @last_direction = nil
+    @opposites = {"north"=>"south","east"=>"west","south"=>"north","west"=>"east","northeast"=>"southwest","southwest"=>"northeast","northwest"=>"southeast","southeast"=>"northwest"}
+    @do_not_wand = [ 'Leustyin', 'Simiy', 'Atanamir', 'Totenus', 'Mevilan','Dyler','Aruthas' ] # Maybe this should be in configuration?
+    @tracked_npcs = []
+    @tracked_pcs = @do_not_wand
+    
+    startup
+    wander_maze
+  end
+  
+  def startup
+    # echo DRRoom.title
+    if(DRRoom.title.include?("The Maze"))
+      fput('shake wand')
+      fput('look')
+      return
+    end
+    if(DRRoom.npcs.include?('spieler'))
+    
+      EquipmentManager.new(get_settings).empty_hands
+      
+      case bput("get maze pass","You get","What were you")
+      when "You get"
+        2.times do
+          fput('redeem pass')
+          pause 1
+          waitrt?
+        end
+        fput('stow maze pass')
+        fput('ask spieler about access')
+        pause 1
+        
+        2.times do
+          fput('go door')
+          pause 1
+          waitrt?
+        end
+        fput('get wand')
+        fput('shake wand')
+        fput('look')
+      when "What were you"
+        echo "Are you out of passes?"
+        exit
+      end
+    else
+      echo "Please move to a room with a spieler to start"
+      exit
+    end
+  end
+
+  def getNextRoomId
+    return @visitedRooms.size
+  end
+  
+  def loadRoom(id)
+    room = @visitedRooms[id]
+    if room.nil?
+      room = MazeRoom.new(getNextRoomId)
+      @visitedRooms[room.id] = room
+    end
+    return room
+  end  
+  
+  def getRoomByCoords(x,y)
+    # echo "LOOKING FOR ROOM AT #{x} x #{y}"
+    @visitedRooms.each do | id, room |
+      if(room.xpos==x && room.ypos==y)
+        # echo "FOUND ROOM AT #{@xpos} x #{@ypos}: #{room.to_s}"
+        return room
+      end
+    end
+    return nil
+  end
+  
+  def wander_maze
+    loop do
+    
+      exit if(DRRoom.title.include?("Recovery Room"))
+      exit if DRRoom.title.include?("Droughtman's Maze, Grand Hall")
+      exit if DRRoom.title.include?("Winner's Circle")
+      
+      if(Flags['whoosh'])
+        resetMaze
+        Flags.reset('whoosh')
+      end
+      
+      # echo "DEBUG: #{@visitedRooms}"
+      # echo "POS: #{@currentX} x #{@currentY}"
+      room = getRoomByCoords(@currentX,@currentY)
+      if room==nil
+        room = loadRoom(@currentRoom)
+        room.xpos = @currentX
+        room.ypos = @currentY
+      else
+        @currentRoom = room.id
+      end
+      # echo "CURRENT ROOM: + #{room.to_s}"
+      room.exits[@opposites[@last_direction]] = @lastRoom unless @last_direction.nil?
+      
+      room.updateExits
+      
+      objs = DRRoom.room_objs
+      pcs = DRRoom.pcs
+      npcs = DRRoom.npcs
+      
+      # echo npcs if npcs.length > 0
+      # echo "CURRENT ROOM: + #{room.to_s}"
+      # pause 3
+      
+      
+      
+      if(Flags['darkmaze'])
+        fput('shake wand')
+        Flags.reset('darkmaze')
+      end
+      
+      if(objs.include?("white door"))
+        @whitedoor_found = true
+        move("go white door") if has_key?
+      end
+      
+      wand_npcs
+        
+      if objs.include?('golden key')
+        DRC.bput('get golden key', 'You pick up')
+        if @whitedoor_found
+          # Reset the maze, otherwise our wander priority will avoid going in rooms we've been in
+          resetMaze
+        end
+      end
+        
+      if Flags['has-key'] && pcs.include?(Flags['has-key'][1]) && !@tracked_pcs.include?(Flags['has-key'][1])
+        wave_wand(Flags['has-key'][1])
+        @tracked_pcs << Flags['has-key'][1]
+        waitrt?
+        DRC.bput('get golden key', 'You pick up','What were you')
+      end
+  
+      objs.each do |obj|
+        pull_rope if obj.include?('rope')
+      end
+      # echo "C: #{@currentRoom}"
+      
+      nextMove = get_next_exit
+      nextMove = stripXml(nextMove)
+        
+      fix_standing
+
+      if(nextMove.include?('door'))
+        nextMove = "go " + nextMove
+      end
+
+      @last_direction=nextMove
+      @lastRoom = @currentRoom
+        
+      if(room.exits[nextMove]==nil)
+        nextRoom = getNextRoomId
+        room.exits[nextMove] = nextRoom
+      else
+        nextRoom = room.exits[nextMove]
+      end
+        
+      if(Flags['wanddrop'])
+        fput('get wand')
+        Flags.reset('wanddrop')
+      end
+
+      wand_npcs
+      move(nextMove)
+      @tracked_npcs = []
+      @tracked_pcs = @do_not_wand
+      
+      @currentRoom = nextRoom
+      if(nextMove.include?("north"))
+        @currentY = @currentY + 1
+      end
+      if(nextMove.include?("south"))
+        @currentY = @currentY - 1
+      end
+      if(nextMove.include?("east"))
+        @currentX = @currentX + 1
+      end
+      if(nextMove.include?("west"))
+        @currentX = @currentX - 1
+      end
+      if(nextMove.include?("door"))
+        @currentX = @currentX + 100
+        @currentY = @currentY + 100
+      end
+      # echo "I'm now in room #{@currentRoom}" 
+    end
+  end
+
+  def wand_npcs
+    if Flags['reset-npcs']
+      @tracked_npcs = [] 
+      Flags.reset('reset-npcs')
+    end
+    npcs = DRRoom.npcs
+    return if npcs.empty?
+    npcs
+      .reject { |npc| @tracked_npcs.include?(npc) }
+      .each do |npc| 
+        wave_wand(npc)
+        @tracked_npcs << npc
+      end
+  end
+  
+  def resetMaze
+    @visitedRooms = {}
+    @currentRoom = getNextRoomId
+    @currentX = 0
+    @currentY = 0
+    @lastRoom = 0
+    @last_direction = nil
+  end
+  def stripXml(string)
+    return string.gsub(/<\/?[^>]*>/, "")
+  end
+  
+  def move(direction="")
+    waitrt?
+    # echo "Moving #{direction}"
+    case bput(direction,"stunned","Bonk","You can't","A wall of light shimmers","The Maze","...wait","Although the door itself is open","Trumpets cry out in jubilant fanfare","Obvious exits:")
+    when "...wait"
+      pause 1
+      move(direction)
+    when "you can't"
+      return
+    when "stunned"
+      while(stunned?)
+        pause 0.2
+      end
+      move(direction)
+    when "A wall of light shimmers"
+      move("go arch")
+      exit
+    when "Bonk"
+      #We hit a closed door
+      direction = direction.gsub("go ","")
+      cr = @visitedRooms[@currentRoom]
+      cr.removeExit(direction)
+    end
+    pause 0.2
+    # pause 0.5 if has_key?
+  end
+  def get_next_exit
+    # echo "Looking for best exit for room #{@currentRoom}"
+    cr = @visitedRooms[@currentRoom]
+    unvisitedExits = Array.new
+    desiredExits = Array.new
+    # echo cr.to_s
+    cr.exits.each do | path, value |
+      if value.nil?
+        unvisitedExits << path
+      end
+    end
+    if(unvisitedExits.length > 0)
+      # echo "Found Unvisited: #{unvisitedExits}"
+      desiredExits = unvisitedExits
+    else
+      # echo "Also found: #{cr.exits}"
+      desiredExits = cr.exits.keys
+    end
+    if desiredExits.length > 1
+      desiredExits = desiredExits - [@opposites[@last_direction]]
+      return desiredExits.shuffle.first
+    else
+      return desiredExits[0]
+    end
+    
+    # exits = DRRoom.exits
+    # DRRoom.room_objs.each do | obj |
+      # if(obj.include?('door'))
+        # exits << obj
+      # end
+    # end
+    # nextExits = exits - [@opposites[@last_direction]]
+    # nextExits = exits - [@last_direction] if @last_direction.include?('door')
+    
+    # if(nextExits.empty?)
+      # return exits.first
+    # else
+      # return nextExits.shuffle.first
+    # end
+  end
+  
+  def has_key?
+    DRC.left_hand =="golden key" || DRC.right_hand =="golden key"
+  end
+
+  def wave_wand(target)
+    DRC.bput("wave wand at #{target}", 'I do not understand', 'You wave your blue wand at', 'is already frozen')
+    waitrt?
+    bput('look',"Obvious exits:")
+  end
+  
+  def pull_rope
+    return if has_key?
+    DRC.bput('pull rope', 'The rope falls to the floor', 'You give a rope a sharp tug', 'I\'m afraid that you', 'The rope begins to expand before','A faint fizzling sound comes from the rope')
+    waitrt?
+    while stunned?
+      pause 0.2
+    end
+    if DRRoom.room_objs.include?('golden key')
+      DRC.bput('get golden key', 'You pick up')
+    end
+  end
+end
+
+Wander.new
+
+
+before_dying do
+  [ 'has-key', 'reset-npcs', 'darkmaze', 'wanddrop', 'whoosh' ].each { |flag| Flags.delete(flag) }
+end
