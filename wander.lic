@@ -335,6 +335,7 @@ class Wander
       move(direction)
     when "A wall of light shimmers"
       move("go arch")
+      fput("get box in crate")
       exit
     when "Bonk"
       #We hit a closed door
