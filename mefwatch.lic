@@ -124,10 +124,6 @@ class MEFWatch
     end
   end
 
-  def pause_all(force = false)
-
-  end
-
 end
 
 MEFWatch.new
