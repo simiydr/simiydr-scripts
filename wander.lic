@@ -105,8 +105,7 @@ class Wander
     
       EquipmentManager.new(get_settings).empty_hands
       
-      case bput("get maze pass","You get","What were you")
-      when "You get"
+      if getMazePass
         2.times do
           fput('redeem pass')
           pause 1
@@ -124,13 +123,27 @@ class Wander
         fput('get wand')
         fput('shake wand')
         fput('look')
-      when "What were you"
+      else
         echo "Are you out of passes?"
         exit
       end
     else
       echo "Please move to a room with a spieler to start"
       exit
+    end
+  end
+
+  def getMazePass
+    case bput("get maze pass","You get","What were you")
+    when 'You get'
+      return true
+    when 'What were you'
+      case bput('get runner pass', 'You get', 'What were you')
+      when 'You get'
+        return true
+      when 'What were you'
+        return false
+      end
     end
   end
 
@@ -187,7 +200,8 @@ class Wander
       
       objs = DRRoom.room_objs
       pcs = DRRoom.pcs
-      npcs = DRRoom.npcs
+      #npcs = DRRoom.npcs
+      #echo npcs
       
       # echo npcs if npcs.length > 0
       # echo "CURRENT ROOM: + #{room.to_s}"
@@ -283,6 +297,7 @@ class Wander
       Flags.reset('reset-npcs')
     end
     npcs = DRRoom.npcs
+    pause 0.1
     return if npcs.empty?
     npcs
       .reject { |npc| @tracked_npcs.include?(npc) }
