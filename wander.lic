@@ -111,7 +111,7 @@ class Wander
           pause 1
           waitrt?
         end
-        fput('stow maze pass')
+        fput('stow my pass')
         fput('ask spieler about access')
         pause 1
         
