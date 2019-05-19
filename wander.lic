@@ -322,7 +322,7 @@ class Wander
   def move(direction="")
     waitrt?
     # echo "Moving #{direction}"
-    case bput(direction,"stunned","Bonk","You can't","A wall of light shimmers","The Maze","...wait","Although the door itself is open","Trumpets cry out in jubilant fanfare","Obvious exits:")
+    case bput(direction,"stunned","Bonk","You can't","A wall of light shimmers","The Maze","...wait","Although the door itself is open","Trumpets cry out in jubilant fanfare","Obvious exits:","You can't go there")
     when "...wait"
       pause 1
       move(direction)
@@ -342,6 +342,8 @@ class Wander
       direction = direction.gsub("go ","")
       cr = @visitedRooms[@currentRoom]
       cr.removeExit(direction)
+    when "You can't go there"
+      fput("look")
     end
     pause 0.2
     # pause 0.5 if has_key?
