@@ -420,7 +420,7 @@ class Wander
   end
 
   def search_wand_for_maze_center
-    result = DRC.bput('search my wand', 'you believe the center of the maze is .*')
+    result = DRC.bput('search my wand', 'you believe the center of the maze is .*', 'You\'re not in any condition')
     if result =~ /you believe the center of the maze is (?:far|a bit|a ways) to the (north|south|east|west)(?: and (?:far|a bit|a ways) to the (north|south))?\./
       $LAST_MATCH_INFO.to_a.slice(1..2)
     else
