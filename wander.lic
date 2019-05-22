@@ -331,7 +331,7 @@ class Wander
   def move(direction="")
     waitrt?
     # echo "Moving #{direction}"
-    case bput(direction,"stunned","Bonk","A wall of light shimmers","The Maze","...wait","Although the door itself is open","Trumpets cry out in jubilant fanfare","Obvious exits:","You can't go there",'What were you referring to?','You can\'t do that while kneeling!')
+    case bput(direction,"stunned","Bonk","A wall of light shimmers","The Maze","...wait","Although the door itself is open","Trumpets cry out in jubilant fanfare","Obvious exits:","You can't go there",'What were you referring to?','You can\'t do that while kneeling!', 'It\'s pitch dark and you can\'t see a thing')
     when "...wait"
       pause 1
       move(direction)
@@ -356,6 +356,9 @@ class Wander
       cr.removeExit(direction)
     when "You can't go there", 'What were you referring to?'
       fput("look")
+    when 'It\'s pitch dark and you can\'t see a thing'
+      fput('shake wand')
+      fput('look')
     end
     pause 0.2
     # pause 0.5 if has_key?
