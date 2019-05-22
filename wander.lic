@@ -1,6 +1,6 @@
 custom_require.call(%w[common common-travel drinfomon events equipmanager])
 
-Flags.add('has-key', /A booming voice echoes through the maze, "(\w+) just found a golden key!"/)
+Flags.add('has-key', /A booming voice echoes through the maze, "(\w+) just found a golden key!"/, /(\w+) picks up a golden key/)
 Flags.add('reset-npcs', 'begins to move around again')
 Flags.add('darkmaze', 'The soft blue light slowly fades away from you.')
 Flags.add('wanddrop', 'Your blue wand falls to the ground')
@@ -89,6 +89,7 @@ class Wander
     @do_not_wand = [ 'Leustyin', 'Simiy', 'Atanamir', 'Totenus', 'Mevilan','Dyler','Aruthas','Sarvatt','Zharyn' ] # Maybe this should be in configuration?
     @tracked_npcs = []
     @tracked_pcs = @do_not_wand
+    @maze_center = []
     
     startup
     wander_maze
@@ -223,10 +224,11 @@ class Wander
         
       if objs.include?('golden key')
         DRC.bput('get golden key', 'You pick up')
-        if @whitedoor_found
-          # Reset the maze, otherwise our wander priority will avoid going in rooms we've been in
-          resetMaze
-        end
+        resetMaze
+        # if @whitedoor_found
+        #   # Reset the maze, otherwise our wander priority will avoid going in rooms we've been in
+        #   resetMaze
+        # end
       end
         
       if Flags['has-key'] && pcs.include?(Flags['has-key'][1]) && !@tracked_pcs.include?(Flags['has-key'][1])
@@ -234,6 +236,7 @@ class Wander
         @tracked_pcs << Flags['has-key'][1]
         waitrt?
         DRC.bput('get golden key', 'You pick up','What were you')
+        resetMaze
       end
   
       objs.each do |obj|
@@ -314,6 +317,10 @@ class Wander
     @currentY = 0
     @lastRoom = 0
     @last_direction = nil
+    room = loadRoom(@currentRoom)
+    room.xpos = @currentX
+    room.ypos = @currentY
+    room.updateExits
   end
   def stripXml(string)
     return string.gsub(/<\/?[^>]*>/, "")
@@ -322,12 +329,12 @@ class Wander
   def move(direction="")
     waitrt?
     # echo "Moving #{direction}"
-    case bput(direction,"stunned","Bonk","You can't","A wall of light shimmers","The Maze","...wait","Although the door itself is open","Trumpets cry out in jubilant fanfare","Obvious exits:","You can't go there")
+    case bput(direction,"stunned","Bonk","A wall of light shimmers","The Maze","...wait","Although the door itself is open","Trumpets cry out in jubilant fanfare","Obvious exits:","You can't go there",'What were you referring to?')
     when "...wait"
       pause 1
       move(direction)
-    when "you can't"
-      return
+    # when "you can't"
+    #   return
     when "stunned"
       while(stunned?)
         pause 0.2
@@ -342,35 +349,46 @@ class Wander
       direction = direction.gsub("go ","")
       cr = @visitedRooms[@currentRoom]
       cr.removeExit(direction)
-    when "You can't go there"
+    when "You can't go there", 'What were you referring to?'
       fput("look")
     end
     pause 0.2
     # pause 0.5 if has_key?
   end
+
   def get_next_exit
     # echo "Looking for best exit for room #{@currentRoom}"
     cr = @visitedRooms[@currentRoom]
     unvisitedExits = Array.new
-    desiredExits = Array.new
+    desiredExits = cr.exits.keys
     # echo cr.to_s
     cr.exits.each do | path, value |
       if value.nil?
         unvisitedExits << path
       end
     end
-    if(unvisitedExits.length > 0)
-      # echo "Found Unvisited: #{unvisitedExits}"
-      desiredExits = unvisitedExits
+    desiredExits = unvisitedExits if unvisitedExits.length > 0
+    desiredExits = desiredExits - [@opposites[@last_direction]] if desiredExits.length > 1
+
+    if has_key? && (@maze_center.length > 0)
+      echo "maze_center: #{@maze_center}\ndesiredExits: #{desiredExits}"
+      toWhiteDoor = desiredExits & @maze_center
+      echo "toDoor: #{toWhiteDoor}"
+      if toWhiteDoor.length > 0
+        echo "Ended returning toWhiteDoor.shuffle.first"
+        return toWhiteDoor.shuffle.first
+      else
+        echo "Ended returned desiredExists"
+        return desiredExits.shuffle.first
+      end
+    elsif has_key? && DRRoom.npcs.empty? && DRRoom.pcs.empty? && @maze_center.empty?
+      @maze_center = search_wand_for_maze_center
+      get_next_exit
+    elsif has_key? && @last_direction.include?('door') && DRRoom.npcs.empty? && DRRoom.pcs.empty?
+      @maze_center = search_wand_for_maze_center
+      get_next_exit
     else
-      # echo "Also found: #{cr.exits}"
-      desiredExits = cr.exits.keys
-    end
-    if desiredExits.length > 1
-      desiredExits = desiredExits - [@opposites[@last_direction]]
       return desiredExits.shuffle.first
-    else
-      return desiredExits[0]
     end
     
     # exits = DRRoom.exits
@@ -389,15 +407,14 @@ class Wander
     # end
   end
 
-  def search_wand
-    result = bput('search my wand', 'you believe the center of the maze is .*')
+  def search_wand_for_maze_center
+    result = DRC.bput('search my wand', 'you believe the center of the maze is .*')
     if result =~ /you believe the center of the maze is .* (east|west) .* (north|south)\./
-      $LAST_MATCH_INFO.slice(1..2)
+      $LAST_MATCH_INFO.to_a.slice(1..2)
     else
       []
     end
   end
-
   
   def has_key?
     DRC.left_hand =="golden key" || DRC.right_hand =="golden key"
@@ -417,6 +434,7 @@ class Wander
     end
     if DRRoom.room_objs.include?('golden key')
       DRC.bput('get golden key', 'You pick up')
+      resetMaze
     end
   end
 end
