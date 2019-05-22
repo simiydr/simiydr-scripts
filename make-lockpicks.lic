@@ -27,8 +27,6 @@ class MakeLockpicks
       echo "*** You do not have enough keyblanks to make #{@lockpicks_needed} lockpicks. Reducing to #{@keyblanks_on_hand}."
       @lockpicks_needed = @keyblanks_on_hand
     end
-    
-    wait_for_script_to_complete('buff', ['make-lockpicks'])
 
     make_lockpicks
   end
@@ -37,6 +35,7 @@ class MakeLockpicks
     get_crafting_item('carving knife', @settings.crafting_container, @settings.crafting_items_in_container, @settings.engineering_belt)
 
     @lockpicks_needed.times do
+      wait_for_script_to_complete('buff', ['make-lockpicks'])
       carve_keyblank
       case bput('put my lockpick on my lockpick ring', 'You put', 'The lockpick ring already has', 'You don\'t think you should put different kinds of lockpicks')
       when 'The lockpick ring already has'
