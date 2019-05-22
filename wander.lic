@@ -224,6 +224,7 @@ class Wander
         
       if objs.include?('golden key')
         DRC.bput('get golden key', 'You pick up')
+        Flags.reset('has-key')
         resetMaze
         # if @whitedoor_found
         #   # Reset the maze, otherwise our wander priority will avoid going in rooms we've been in
@@ -236,6 +237,7 @@ class Wander
         @tracked_pcs << Flags['has-key'][1]
         waitrt?
         DRC.bput('get golden key', 'You pick up','What were you')
+        Flags.reset('has-key')
         resetMaze
       end
   
@@ -329,7 +331,7 @@ class Wander
   def move(direction="")
     waitrt?
     # echo "Moving #{direction}"
-    case bput(direction,"stunned","Bonk","A wall of light shimmers","The Maze","...wait","Although the door itself is open","Trumpets cry out in jubilant fanfare","Obvious exits:","You can't go there",'What were you referring to?')
+    case bput(direction,"stunned","Bonk","A wall of light shimmers","The Maze","...wait","Although the door itself is open","Trumpets cry out in jubilant fanfare","Obvious exits:","You can't go there",'What were you referring to?','You can\'t do that while kneeling!')
     when "...wait"
       pause 1
       move(direction)
@@ -339,6 +341,9 @@ class Wander
       while(stunned?)
         pause 0.2
       end
+      move(direction)
+    when 'You can\'t do that while kneeling!'
+      fix_standing
       move(direction)
     when "A wall of light shimmers"
       move("go arch")
@@ -409,7 +414,7 @@ class Wander
 
   def search_wand_for_maze_center
     result = DRC.bput('search my wand', 'you believe the center of the maze is .*')
-    if result =~ /you believe the center of the maze is .* (east|west) .* (north|south)\./
+    if result =~ /you believe the center of the maze is (?:far|a bit|a ways) to the (north|south|east|west)(?: and (?:far|a bit|a ways) to the (north|south))?\./
       $LAST_MATCH_INFO.to_a.slice(1..2)
     else
       []
@@ -434,6 +439,7 @@ class Wander
     end
     if DRRoom.room_objs.include?('golden key')
       DRC.bput('get golden key', 'You pick up')
+      Flags.reset('has-key')
       resetMaze
     end
   end
