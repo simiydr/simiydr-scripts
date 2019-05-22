@@ -297,12 +297,12 @@ class Wander
   end
 
   def wand_npcs
+    pause 0.1
     if Flags['reset-npcs']
       @tracked_npcs = [] 
       Flags.reset('reset-npcs')
     end
     npcs = DRRoom.npcs
-    pause 0.1
     return if npcs.empty?
     npcs
       .reject { |npc| @tracked_npcs.include?(npc) }
@@ -366,6 +366,7 @@ class Wander
     cr = @visitedRooms[@currentRoom]
     unvisitedExits = Array.new
     desiredExits = cr.exits.keys
+    echo "1) desiredExits: #{desiredExits}"
     # echo cr.to_s
     cr.exits.each do | path, value |
       if value.nil?
@@ -373,11 +374,13 @@ class Wander
       end
     end
     desiredExits = unvisitedExits if unvisitedExits.length > 0
+    echo "2) desiredExits: #{desiredExits}"
     desiredExits = desiredExits - [@opposites[@last_direction]] if desiredExits.length > 1
+    echo "3) desiredExits: #{desiredExits}"
 
     if has_key? && (@maze_center.length > 0)
-      #echo "maze_center: #{@maze_center}\ndesiredExits: #{desiredExits}"
       toWhiteDoor = desiredExits & @maze_center
+      echo "maze_center: #{@maze_center}\ntoWhiteDoor: #{toWhiteDoor}\ndesiredExits: #{desiredExits}"
       #echo "toDoor: #{toWhiteDoor}"
       if toWhiteDoor.length > 0
         #echo "Ended returning toWhiteDoor.shuffle.first"
