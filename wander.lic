@@ -358,6 +358,7 @@ class Wander
       fput("look")
     when 'It\'s pitch dark and you can\'t see a thing'
       fput('shake wand')
+      Flags.reset('darkmaze')
       fput('look')
     end
     pause 0.2
