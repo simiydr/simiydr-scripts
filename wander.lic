@@ -371,14 +371,14 @@ class Wander
     desiredExits = desiredExits - [@opposites[@last_direction]] if desiredExits.length > 1
 
     if has_key? && (@maze_center.length > 0)
-      echo "maze_center: #{@maze_center}\ndesiredExits: #{desiredExits}"
+      #echo "maze_center: #{@maze_center}\ndesiredExits: #{desiredExits}"
       toWhiteDoor = desiredExits & @maze_center
-      echo "toDoor: #{toWhiteDoor}"
+      #echo "toDoor: #{toWhiteDoor}"
       if toWhiteDoor.length > 0
-        echo "Ended returning toWhiteDoor.shuffle.first"
+        #echo "Ended returning toWhiteDoor.shuffle.first"
         return toWhiteDoor.shuffle.first
       else
-        echo "Ended returned desiredExists"
+        #echo "Ended returned desiredExists"
         return desiredExits.shuffle.first
       end
     elsif has_key? && DRRoom.npcs.empty? && DRRoom.pcs.empty? && @maze_center.empty?
