@@ -86,7 +86,7 @@ class Wander
     @whitedoor_found = false
     @last_direction = nil
     @opposites = {"north"=>"south","east"=>"west","south"=>"north","west"=>"east","northeast"=>"southwest","southwest"=>"northeast","northwest"=>"southeast","southeast"=>"northwest","door"=>"door"}
-    @do_not_wand = [ 'Leustyin', 'Simiy', 'Atanamir', 'Totenus', 'Mevilan','Dyler','Aruthas' ] # Maybe this should be in configuration?
+    @do_not_wand = [ 'Leustyin', 'Simiy', 'Atanamir', 'Totenus', 'Mevilan','Dyler','Aruthas','Sarvatt','Zharyn' ] # Maybe this should be in configuration?
     @tracked_npcs = []
     @tracked_pcs = @do_not_wand
     
@@ -406,7 +406,6 @@ class Wander
   def wave_wand(target)
     DRC.bput("wave wand at #{target}", 'I do not understand', 'You wave your blue wand at', 'is already frozen')
     waitrt?
-    bput('look',"Obvious exits:")
   end
   
   def pull_rope
