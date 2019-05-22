@@ -85,7 +85,7 @@ class Wander
     @lastRoom = 0
     @whitedoor_found = false
     @last_direction = nil
-    @opposites = {"north"=>"south","east"=>"west","south"=>"north","west"=>"east","northeast"=>"southwest","southwest"=>"northeast","northwest"=>"southeast","southeast"=>"northwest"}
+    @opposites = {"north"=>"south","east"=>"west","south"=>"north","west"=>"east","northeast"=>"southwest","southwest"=>"northeast","northwest"=>"southeast","southeast"=>"northwest","door"=>"door"}
     @do_not_wand = [ 'Leustyin', 'Simiy', 'Atanamir', 'Totenus', 'Mevilan','Dyler','Aruthas' ] # Maybe this should be in configuration?
     @tracked_npcs = []
     @tracked_pcs = @do_not_wand
@@ -246,10 +246,6 @@ class Wander
         
       fix_standing
 
-      if(nextMove.include?('door'))
-        nextMove = "go " + nextMove
-      end
-
       @last_direction=nextMove
       @lastRoom = @currentRoom
         
@@ -263,6 +259,10 @@ class Wander
       if(Flags['wanddrop'])
         fput('get wand')
         Flags.reset('wanddrop')
+      end
+
+      if(nextMove.include?('door'))
+        nextMove = "go " + nextMove
       end
 
       wand_npcs
@@ -388,6 +388,16 @@ class Wander
       # return nextExits.shuffle.first
     # end
   end
+
+  def search_wand
+    result = bput('search my wand', 'you believe the center of the maze is .*')
+    if result =~ /you believe the center of the maze is .* (east|west) .* (north|south)\./
+      $LAST_MATCH_INFO.slice(1..2)
+    else
+      []
+    end
+  end
+
   
   def has_key?
     DRC.left_hand =="golden key" || DRC.right_hand =="golden key"
