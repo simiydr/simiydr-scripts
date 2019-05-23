@@ -391,6 +391,14 @@ class Wander
         return toWhiteDoor.shuffle.first
       elsif desiredExits.nil?
         fput('look')
+        room = getRoomByCoords(@currentX,@currentY)
+        if room==nil
+          room = loadRoom(@currentRoom)
+          room.xpos = @currentX
+          room.ypos = @currentY
+        else
+          @currentRoom = room.id
+        end
         get_next_exit
       else
         #echo "Ended returned desiredExits"
