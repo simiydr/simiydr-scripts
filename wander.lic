@@ -174,8 +174,8 @@ class Wander
   
   def wander_maze
     loop do
-    
-      exit if(DRRoom.title.include?("Recovery Room"))
+      pause 0.1
+      exit if DRRoom.title.include?("Recovery Room")
       exit if DRRoom.title.include?("Droughtman's Maze, Grand Hall")
       exit if DRRoom.title.include?("Winner's Circle")
       
@@ -361,7 +361,6 @@ class Wander
       Flags.reset('darkmaze')
       fput('look')
     end
-    pause 0.2
     # pause 0.5 if has_key?
   end
 
