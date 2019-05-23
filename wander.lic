@@ -324,7 +324,7 @@ class Wander
     room.ypos = @currentY
     room.updateExits
   end
-  
+
   def stripXml(string)
     return string.gsub(/<\/?[^>]*>/, "")
   end
@@ -389,8 +389,11 @@ class Wander
       if toWhiteDoor.length > 0
         #echo "Ended returning toWhiteDoor.shuffle.first"
         return toWhiteDoor.shuffle.first
+      elsif desiredExits.length == 0
+        fput('look')
+        get_next_exit
       else
-        #echo "Ended returned desiredExists"
+        #echo "Ended returned desiredExits"
         return desiredExits.shuffle.first
       end
     elsif has_key? && DRRoom.npcs.empty? && DRRoom.pcs.empty? && @maze_center.empty?
