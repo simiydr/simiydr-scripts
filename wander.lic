@@ -181,7 +181,6 @@ class Wander
       
       if(Flags['whoosh'])
         resetMaze
-        Flags.reset('whoosh')
       end
       
       # echo "DEBUG: #{@visitedRooms}"
@@ -313,6 +312,7 @@ class Wander
   end
   
   def resetMaze
+    Flags.reset('whoosh')
     @visitedRooms = {}
     @currentRoom = getNextRoomId
     @currentX = 0
@@ -324,6 +324,7 @@ class Wander
     room.ypos = @currentY
     room.updateExits
   end
+  
   def stripXml(string)
     return string.gsub(/<\/?[^>]*>/, "")
   end
