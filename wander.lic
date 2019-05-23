@@ -389,7 +389,7 @@ class Wander
       if toWhiteDoor.length > 0
         #echo "Ended returning toWhiteDoor.shuffle.first"
         return toWhiteDoor.shuffle.first
-      elsif desiredExits.length == 0
+      elsif desiredExits.nil?
         fput('look')
         get_next_exit
       else
@@ -425,7 +425,7 @@ class Wander
   def search_wand_for_maze_center
     result = DRC.bput('search my wand', 'you believe the center of the maze is .*', 'You\'re not in any condition')
     if result =~ /you believe the center of the maze is (?:far|a bit|a ways) to the (north|south|east|west)(?: and (?:far|a bit|a ways) to the (north|south))?\./
-      $LAST_MATCH_INFO.to_a.slice(1..2)
+      $LAST_MATCH_INFO.to_a.length == 3 ? $LAST_MATCH_INFO.to_a.slice(1..2) : $LAST_MATCH_INFO.to_a.slice(1)
     else
       []
     end
