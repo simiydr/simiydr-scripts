@@ -78,10 +78,10 @@ class MakeLockpicks
       when 'It would be better to find', 'proudly glance down at a'
         case bput('glance', 'You glance down to see .*')
         when /and a ([a-z\']+) \w+ lockpick in your left hand/
-          if $LAST_MATCH_INFO[1] == 'grandmaster\'s'
+          if Regexp.last_match(1) == 'grandmaster\'s'
             bput('carve my lockpick with my carving knife', 'With the precision and skill shown only by true masters')
           end
-          return if @picks_to_keep.include? $LAST_MATCH_INFO[1]
+          return if @picks_to_keep.include? Regexp.last_match(1)
           dispose_trash('lockpick')
           carve_keyblank
         end
@@ -96,7 +96,7 @@ class MakeLockpicks
       bput("open my #{ordinal} keyblank pocket", 'You open', 'That is already', 'What were you')
       case bput("count my #{ordinal} keyblank pocket", /It looks like there are .* keyblanks/, 'I could not find', 'There\'s nothing inside')
       when /It looks like there are (\d+) \w+ keyblanks/
-        keyblanks += $LAST_MATCH_INFO[1].to_i
+        keyblanks += Regexp.last_match(1).to_i
       when 'There\'s nothing inside'
         dispose("#{ordinal} keyblank pocket")
         redo
@@ -110,8 +110,9 @@ class MakeLockpicks
   def count_lockpicks
     case bput('glance my lockpick ring', /and it might hold an additional (\d+)/, 'and it appears to be full', 'I could not find what you', /but you think (\d+) lockpicks would probably fit/)
     when /and it might hold an additional (\d+)/, /but you think (\d+) lockpicks would probably fit/
-      return $LAST_MATCH_INFO[1].to_i
+      return Regexp.last_match(1).to_i
     when 'and it appears to be full'
+      echo 'But it is full'
       return 0
     when 'I could not find what you'
       echo '*** Unable to find your lockpick ring ***'
