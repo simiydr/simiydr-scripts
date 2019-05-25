@@ -86,7 +86,7 @@ class Wander
     @whitedoor_found = false
     @last_direction = nil
     @opposites = {"north"=>"south","east"=>"west","south"=>"north","west"=>"east","northeast"=>"southwest","southwest"=>"northeast","northwest"=>"southeast","southeast"=>"northwest","door"=>"door"}
-    @do_not_wand = [ 'Leustyin', 'Simiy', 'Atanamir', 'Totenus', 'Mevilan','Dyler','Aruthas','Sarvatt','Zharyn' ] # Maybe this should be in configuration?
+    @do_not_wand = [ 'Leustyin', 'Simiy', 'Atanamir', 'Totenus', 'Mevilan','Dyler','Aruthas','Sarvatt','Zharyn', 'Vivalynn', 'Moriora' ] # Maybe this should be in configuration?
     @tracked_npcs = []
     @tracked_pcs = @do_not_wand
     @maze_center = []
