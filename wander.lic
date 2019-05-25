@@ -405,10 +405,10 @@ class Wander
         #echo "Ended returned desiredExits"
         return desiredExits.shuffle.first
       end
-    elsif has_key? && DRRoom.npcs.empty? && DRRoom.pcs.empty? && @maze_center.empty?
+    elsif has_key? && DRRoom.npcs.empty? && DRRoom.pcs.empty? && @maze_center.empty? && !@skip_search
       @maze_center = search_wand_for_maze_center
       get_next_exit
-    elsif has_key? && @last_direction.include?('door') && DRRoom.npcs.empty? && DRRoom.pcs.empty?
+    elsif has_key? && @last_direction.include?('door') && DRRoom.npcs.empty? && DRRoom.pcs.empty? && !@skip_search
       @maze_center = search_wand_for_maze_center
       get_next_exit
     else
@@ -432,7 +432,6 @@ class Wander
   end
 
   def search_wand_for_maze_center
-    return [] if @skip_search
     result = DRC.bput('search my wand', 'you believe the center of the maze is .*', 'You\'re not in any condition')
     if result =~ /you believe the center of the maze is (?:far|a bit|a ways) to the (north|south|east|west)(?: and (?:far|a bit|a ways) to the (north|south))?\./
       $LAST_MATCH_INFO.to_a.length == 3 ? $LAST_MATCH_INFO.to_a.slice(1..2) : $LAST_MATCH_INFO.to_a.slice(1)
