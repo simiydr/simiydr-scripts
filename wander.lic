@@ -86,7 +86,7 @@ class Wander
     @whitedoor_found = false
     @last_direction = nil
     @opposites = {"north"=>"south","east"=>"west","south"=>"north","west"=>"east","northeast"=>"southwest","southwest"=>"northeast","northwest"=>"southeast","southeast"=>"northwest","door"=>"door"}
-    @do_not_wand = [ 'Leustyin', 'Simiy', 'Atanamir', 'Totenus', 'Mevilan','Dyler','Aruthas','Sarvatt','Zharyn', 'Vivalynn', 'Moriora' ] # Maybe this should be in configuration?
+    @do_not_wand = [ 'Leustyin', 'Simiy', 'Atanamir', 'Totenus', 'Mevilan', 'Dyler', 'Aruthas', 'Sarvatt', 'Zharyn', 'Vivalynn', 'Moriora', 'Chuno', 'Feltzer', 'Ezzra'] # Maybe this should be in configuration?
     @tracked_npcs = []
     @tracked_pcs = @do_not_wand
     @maze_center = []
@@ -176,7 +176,12 @@ class Wander
   def wander_maze
     loop do
       pause 0.1
-      exit if DRRoom.title.include?("Recovery Room")
+      if DRRoom.title.include?("Recovery Room")
+        fput('open my package')
+        4.times {fput('get coin in my package')}
+        fput('rumm my package')
+        exit
+      end
       exit if DRRoom.title.include?("Droughtman's Maze, Grand Hall")
       exit if DRRoom.title.include?("Winner's Circle")
       
