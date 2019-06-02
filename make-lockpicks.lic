@@ -12,7 +12,8 @@ class MakeLockpicks
 
   def initialize
     @settings = get_settings
-    @picks_to_keep = [ 'grandmaster\'s', 'master\'s' ]
+    @lockpick_ring = @settings.lockpick_ring || 'lockpick ring'
+    @picks_to_keep = @settings.lockpicks_to_keep || [ 'grandmaster\'s', 'master\'s' ]
 
     stow_hands
     @keyblanks_on_hand = count_keyblanks
@@ -37,8 +38,8 @@ class MakeLockpicks
     @lockpicks_needed.times do
       wait_for_script_to_complete('buff', ['make-lockpicks'])
       carve_keyblank
-      case bput('put my lockpick on my lockpick ring', 'You put', 'The lockpick ring already has', 'You don\'t think you should put different kinds of lockpicks')
-      when 'The lockpick ring already has'
+      case bput("put my lockpick on my #{@lockpick_ring}", 'You put', 'already has', 'You don\'t think you should put different kinds of lockpicks')
+      when 'already has'
         break
       when 'You don\'t think you should put different kinds of lockpicks'
         echo "*** #{left_hand} is of a different quality than your lockpick ring, stowing it"
@@ -108,7 +109,7 @@ class MakeLockpicks
   end
 
   def count_lockpicks
-    case bput('glance my lockpick ring', /and it might hold an additional (\d+)/, 'and it appears to be full', 'I could not find what you', /but you think (\d+) lockpicks would probably fit/)
+    case bput("glance my #{@lockpick_ring}", /and it might hold an additional (\d+)/, 'and it appears to be full', 'I could not find what you', /but you think (\d+) lockpicks would probably fit/)
     when /and it might hold an additional (\d+)/, /but you think (\d+) lockpicks would probably fit/
       return Regexp.last_match(1).to_i
     when 'and it appears to be full'
