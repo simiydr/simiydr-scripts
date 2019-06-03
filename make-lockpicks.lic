@@ -62,7 +62,7 @@ class MakeLockpicks
       carve_keyblank
     end
 
-    case bput('carve my keyblank with my carving knife', 'Starting with a simple slab of material', 'keyblank snaps like a twig', 'You are too injured to do any')
+    case bput('carve my keyblank with my carving knife', 'Starting with a simple slab of material', 'keyblank snaps like a twig', 'You are too injured to do any', 'proudly glance down at a')
     when 'keyblank snaps like a twig'
       carve_keyblank
     when 'You are too injured to do any'
@@ -70,6 +70,8 @@ class MakeLockpicks
       bput('put my keyblank in my keyblank pocket', 'You put')
       echo '*** Go get healed ***'
       exit
+    when 'proudly glance down at a'
+      finish_lockpick
     end
 
     loop do
@@ -77,18 +79,22 @@ class MakeLockpicks
       when 'lockpick snaps like a twig'
         carve_keyblank
       when 'It would be better to find', 'proudly glance down at a'
-        case bput('glance', 'You glance down to see .*')
-        when /and a ([a-z\']+) \w+ lockpick in your left hand/
-          if Regexp.last_match(1) == 'grandmaster\'s'
-            bput('carve my lockpick with my carving knife', 'With the precision and skill shown only by true masters')
-          end
-          return if @picks_to_keep.include? Regexp.last_match(1)
-          dispose_trash('lockpick')
-          carve_keyblank
-        end
+        finish_lockpick
       end
     end
 
+  end
+
+  def finish_lockpick
+    case bput('glance', 'You glance down to see .*')
+    when /and a ([a-z\']+) \w+ lockpick in your left hand/
+      if Regexp.last_match(1) == 'grandmaster\'s'
+        bput('carve my lockpick with my carving knife', 'With the precision and skill shown only by true masters')
+      end
+      return if @picks_to_keep.include? Regexp.last_match(1)
+      dispose_trash('lockpick')
+      carve_keyblank
+    end
   end
 
   def count_keyblanks
