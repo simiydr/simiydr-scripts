@@ -120,7 +120,6 @@ class MakeLockpicks
     when /and it might hold an additional (\d+)/, /but you think (\d+) lockpicks would probably fit/
       return Regexp.last_match(1).to_i
     when 'and it appears to be full'
-      echo 'But it is full'
       return 0
     when 'I could not find what you'
       echo '*** Unable to find your lockpick ring ***'
