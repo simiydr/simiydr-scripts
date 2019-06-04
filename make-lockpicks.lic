@@ -38,6 +38,7 @@ class MakeLockpicks
     @lockpicks_needed.times do
       wait_for_script_to_complete('buff', ['make-lockpicks'])
       carve_keyblank
+      finish_lockpick
       case bput("put my lockpick on my #{@lockpick_ring}", 'You put', 'already has', 'You don\'t think you should put different kinds of lockpicks')
       when 'already has'
         break
@@ -71,7 +72,7 @@ class MakeLockpicks
       echo '*** Go get healed ***'
       exit
     when 'proudly glance down at a'
-      finish_lockpick
+      return
     end
 
     loop do
@@ -79,7 +80,7 @@ class MakeLockpicks
       when 'lockpick snaps like a twig'
         carve_keyblank
       when 'It would be better to find', 'proudly glance down at a'
-        finish_lockpick
+        return
       end
     end
 
