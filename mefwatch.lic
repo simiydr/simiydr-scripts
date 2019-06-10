@@ -90,7 +90,7 @@ class MEFWatch
     else
       case bput('stow left', 'What were you', /You put your .*\./)
       when /You put your .* in your (?<container>.*)\./
-        @left_hand_container = $LAST_MATCH_INFO['container']
+        @left_hand_container = Regexp.last_match(:container)
       end
     end
   end
