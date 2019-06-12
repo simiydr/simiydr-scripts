@@ -56,7 +56,7 @@ class MEFWatch
   def refresh_mef
     echo "*** MEF is not up or will expire soon, attempting to use a wand ***" if @debug 
     # pause other scripts
-    return if !pause_all
+    return unless pause_all
     waitrt?
 
     empty_left_hand if right_hand && left_hand
